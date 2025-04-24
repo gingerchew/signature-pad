@@ -1,0 +1,22 @@
+{
+  "name": "signature-pad",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev":"vite",
+    "build":"tsc && vite build"
+  },
+  "keywords": [
+    "custom elements",
+    "web components"
+  ],
+  "author": "ginger",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.3"
+  }
+}
