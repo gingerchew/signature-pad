@@ -18,6 +18,7 @@ export class Bezier {
         const c3 = this.calculateControlPoints(points[1], points[2], points[3]).c1;
         return new this(points[1], c2, c3, points[2], widths.start, widths.end);
     }
+    
     static calculateControlPoints(s1:Point, s2:Point, s3:Point) {
         const dx1 = s1.x - s2.x,
             dy1 = s1.y - s2.y,
@@ -57,6 +58,7 @@ export class Bezier {
         }
         return length;
     }
+
     point(t:number, start:number, c1:number, c2:number, end:number) {
         /* Something to do with calculating the bez curve, very magical */
         return (start * (1.0 - t) * (1.0 - t) * (1.0 - t))

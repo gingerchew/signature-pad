@@ -13,7 +13,16 @@ export class SignaturePad extends HTMLElement {
     #ctx: CanvasRenderingContext2D;
 
     static formAssociated = true;
+
     #as = new AbortController();
+    #internals = this.attachInternals();
+    #penColor = '#000';
+    #backgroundColor = 'rgba(0,0,0,0)';
+    #data: PointGroup[] = [];
+    #velocityFilterWeight = 0.7;
+    #lastPoints: Point[] = [];
+    #lastVelocity = 0;
+    #lastWidth = (this.#minWidth + this.#maxWidth) / 2;
 
     #getNumAttr(name:string, fallback:number) {
         return this.hasAttribute(name) ? parseInt(this.getAttribute(name)!, 10) : fallback;
@@ -45,15 +54,6 @@ export class SignaturePad extends HTMLElement {
         return this.hasAttribute('pointer-down');
     }
 
-    #internals = this.attachInternals();
-    #penColor = '#000';
-    #backgroundColor = 'rgba(0,0,0,0)';
-    #data: PointGroup[] = [];
-    #velocityFilterWeight = 0.7;
-    #lastPoints: Point[] = [];
-    #lastVelocity = 0;
-    #lastWidth = (this.#minWidth + this.#maxWidth) / 2;
-    
     #reset() {
         this.#lastPoints = [];
         this.#lastVelocity = 0;
@@ -84,6 +84,7 @@ export class SignaturePad extends HTMLElement {
         this.#data = [];
         this.#reset();
     }
+
     #toDataURL(type?:string, encoderOptions?:number) {
         type ??= 'image/png'
         switch(type) {
@@ -181,21 +182,19 @@ export class SignaturePad extends HTMLElement {
             y += 3 * uu * t * curve.control1.y;
             y += 3 * u * tt * curve.control2.y;
             y += ttt * curve.endPoint.y;
-            const width = Math.min(curve.startWidth + ttt * widthDelta, this.#maxWidth);
-            this.#drawCurveSegment({x, y}, width);
+            
+            this.#drawCurveSegment({x, y}, Math.min(curve.startWidth + ttt * widthDelta, this.#maxWidth));
         }
         this.#ctx.closePath();
         this.#ctx.fill();
     }
     
     #drawDot({ color, point }: { color: string, point: Point }) {
-        const ctx = this.#ctx,
-            width = this.#dotSize;
-        ctx.beginPath();
-        this.#drawCurveSegment(point, width);
-        ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
+        this.#ctx.beginPath();
+        this.#drawCurveSegment(point, this.#dotSize);
+        this.#ctx.closePath();
+        this.#ctx.fillStyle = color;
+        this.#ctx.fill();
     }
     
     #drawCurveSegment({ x, y }: PointCoords, width: number) {
@@ -211,23 +210,22 @@ export class SignaturePad extends HTMLElement {
                 this.#lastPoints.unshift(this.#lastPoints[0]);
             }
             const widths = this.#calculateCurveWidths(this.#lastPoints[1], this.#lastPoints[2]);
-            const curve = Bezier.fromPoints(this.#lastPoints, widths);
+            
             this.#lastPoints.shift();
-            return curve;
+            return Bezier.fromPoints(this.#lastPoints, widths);
         }
         return null;
     }
     
     #calculateCurveWidths(start:Point, end: Point) {
         const velocity = this.#velocityFilterWeight * end.velocityFrom(start) + (1 - this.#velocityFilterWeight) * this.#lastVelocity;
-        const newWidth = this.#strokeWidth(velocity);
         const widths = {
-            end: newWidth,
+            end: this.#strokeWidth(velocity),
             start: this.#lastWidth
         };
         
         this.#lastVelocity = velocity;
-        this.#lastWidth = newWidth;
+        this.#lastWidth = widths.end;
         return widths;
     }
     
@@ -239,6 +237,7 @@ export class SignaturePad extends HTMLElement {
         this.addEventListener('command', this, opts);
         this.style.maxWidth = 'fit-content';
     }
+    
     disconnectedCallback() {
         this.#as.abort();
     }
