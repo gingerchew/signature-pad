@@ -6,6 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   build: {
+    target: ['ES2024'],
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'SignaturePad',
