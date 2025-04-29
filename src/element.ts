@@ -1,11 +1,6 @@
-import type { PointCoords, PointGroup } from './types';
-import { Point } from './point';
-import { Bezier } from './bezier';
-
-function createPoint(x:number, y:number, canvas: HTMLCanvasElement) {
-    const rect = canvas.getBoundingClientRect();
-    return new Point(x - rect.left, y - rect.top, new Date().getTime());
-}
+import type { Point, PointCoords, PointGroup } from './types';
+import { createPoint, distanceTo, velocityFrom } from './point';
+import { Bezier, fromPoints } from './bezier';
 
 export class SignaturePad extends HTMLElement {
     #canvas: HTMLCanvasElement;
@@ -53,19 +48,12 @@ export class SignaturePad extends HTMLElement {
         return this.hasAttribute('pointer-down');
     }
 
-    #reset() {
-        this.#lastPoints = [];
-        this.#lastVelocity = 0;
-        this.#lastWidth = (this.#minWidth + this.#maxWidth) / 2;
-        this.#ctx.fillStyle = this.#penColor;
-    }
-    
     constructor() {
         super();
         
         this.attachShadow({ mode: 'open' });
         
-        if (!this.hasAttribute('name')) this.setAttribute('name', 'signature_image');
+        if (!this.hasAttribute('name')) this.setAttribute('name', this.localName);
         
         this.shadowRoot!.innerHTML = `<canvas width="${this.#canvasWidth}" height="${this.#canvasHeight}" style="touch-action: none;"></canvas>`;
         
@@ -73,7 +61,19 @@ export class SignaturePad extends HTMLElement {
         this.#canvas.style.touchAction = 'none';
         this.#ctx = this.#canvas.getContext('2d')!;
     }
+
+    #reset() {
+        this.#lastPoints = [];
+        this.#lastVelocity = 0;
+        this.#lastWidth = (this.#minWidth + this.#maxWidth) / 2;
+        this.#ctx.fillStyle = this.#penColor;
+    }
     
+    #createPoint(x:number, y:number, canvas: HTMLCanvasElement) {
+        const rect = canvas.getBoundingClientRect();
+        return createPoint(x - rect.left, y - rect.top);
+    }
+
     #clear() {
         const width = this.#getNumAttr('canvaswidth', 300);
         const height = this.#getNumAttr('canvasheight', 150);
@@ -117,29 +117,27 @@ export class SignaturePad extends HTMLElement {
                 this.#strokeEnd(e as PointerEvent);
                 break;
             default:
-                console.log(`@${this.constructor.name}::Missing handler for ${e.type} events`);
+                import.meta.env.DEV && console.log(`@${this.constructor.name}::Missing handler for ${e.type} events`);
                 break;
         }
     }
     
     #strokeStart() {
-        const newPointGroup = {
+        this.#data.push({
             color: this.#penColor,
             points: [],
-        }
-        
-        this.#data.push(newPointGroup);
+        });
         this.#reset()
     }
     
     #strokeUpdate({ clientX: x, clientY: y }: PointerEvent) {
-        const point = createPoint(x, y, this.#canvas);
+        const point = this.#createPoint(x, y, this.#canvas);
         const lastPointGroup = this.#data.at(-1)!;
         
         const lastPoints = lastPointGroup.points;
         const lastPoint = lastPoints.length > 0 && lastPoints.at(-1);
         
-        const isLastPointTooClose = lastPoint ? point.distanceTo(lastPoint) <= this.#minDistance : false;
+        const isLastPointTooClose = lastPoint ? distanceTo(lastPoint, point) <= this.#minDistance : false;
         const color = lastPointGroup.color;
         if (!lastPoint || !(lastPoint && isLastPointTooClose)) {
             const curve = this.#addPoint(point);
@@ -211,13 +209,13 @@ export class SignaturePad extends HTMLElement {
             const widths = this.#calculateCurveWidths(this.#lastPoints[1], this.#lastPoints[2]);
             
             this.#lastPoints.shift();
-            return Bezier.fromPoints(this.#lastPoints, widths);
+            return fromPoints(this.#lastPoints, widths);
         }
         return null;
     }
     
     #calculateCurveWidths(start:Point, end: Point) {
-        const velocity = this.#velocityFilterWeight * end.velocityFrom(start) + (1 - this.#velocityFilterWeight) * this.#lastVelocity;
+        const velocity = this.#velocityFilterWeight * velocityFrom(start, end) + (1 - this.#velocityFilterWeight) * this.#lastVelocity;
         const widths = {
             end: this.#strokeWidth(velocity),
             start: this.#lastWidth
