@@ -1,23 +1,31 @@
 
-export interface Point {
+interface Point {
   x: number;
   y: number;
   time: number;
 }
 
-export interface PointCoords {
-    x: number;
-    y: number;
+interface PointCoords {
+  x: number;
+  y: number;
 }
-export interface PointGroup {
-    color: string;
-    points: Point[]
+interface PointGroup {
+  color: string;
+  points: Point[]
 }
 
-export interface Width {
-    start: number;
-    end: number;
+interface Width {
+  start: number;
+  end: number;
 }
+
+export type {
+  Point,
+  PointCoords,
+  PointGroup,
+  Width
+}
+
 /**
  * Courtesy of the invoker-polyfill
  */
