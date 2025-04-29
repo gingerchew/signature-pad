@@ -2,7 +2,6 @@ import type { PointCoords, PointGroup } from './types';
 import { Point } from './point';
 import { Bezier } from './bezier';
 
-
 function createPoint(x:number, y:number, canvas: HTMLCanvasElement) {
     const rect = canvas.getBoundingClientRect();
     return new Point(x - rect.left, y - rect.top, new Date().getTime());
@@ -17,7 +16,7 @@ export class SignaturePad extends HTMLElement {
     #as = new AbortController();
     #internals = this.attachInternals();
     #penColor = '#000';
-    #backgroundColor = 'rgba(0,0,0,0)';
+    #backgroundColor = '#fff';
     #data: PointGroup[] = [];
     #velocityFilterWeight = 0.7;
     #lastPoints: Point[] = [];
@@ -237,7 +236,7 @@ export class SignaturePad extends HTMLElement {
         this.addEventListener('command', this, opts);
         this.style.maxWidth = 'fit-content';
     }
-    
+
     disconnectedCallback() {
         this.#as.abort();
     }
