@@ -61,6 +61,7 @@ export class SignaturePad extends HTMLElement {
         this.#lastWidth = (this.#minWidth + this.#maxWidth) / 2;
         this.#ctx.fillStyle = this.#penColor;
         this.#internals.states.add(emptyToken);
+        this.#internals.setFormValue('');
     }
     
     #createPoint(x:number, y:number, canvas: HTMLCanvasElement) {
@@ -69,11 +70,9 @@ export class SignaturePad extends HTMLElement {
     }
 
     #clear() {
-        const width = this.#canvasWidth;
-        const height = this.#canvasHeight;
         this.#ctx.fillStyle = this.#backgroundColor;
-        this.#ctx.clearRect(0, 0, width, height);
-        this.#ctx.fillRect(0, 0, width, height);
+        this.#ctx.clearRect(0, 0, this.#canvasWidth, this.#canvasHeight);
+        this.#ctx.fillRect(0, 0, this.#canvasWidth, this.#canvasHeight);
         this.#data = [];
         this.#reset();
     }
