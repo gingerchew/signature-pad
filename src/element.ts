@@ -144,7 +144,7 @@ export class SignaturePad extends HTMLElement {
     
     #strokeEnd(e: PointerEvent) {
         this.#strokeUpdate(e);
-        this.#internals.setFormValue(this.#toDataURL('image/png')!);
+        this.#internals.setFormValue(this.#toDataURL()!);
         this.#internals.states.delete(emptyToken);
     }
     
