@@ -1,4 +1,10 @@
-import { Point } from "./point";
+
+export type Point = {
+  x: number;
+  y: number;
+  time: number;
+}
+
 export type PointCoords = {
     x: number;
     y: number;
