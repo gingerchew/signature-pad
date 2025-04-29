@@ -51,7 +51,6 @@ export class SignaturePad extends HTMLElement {
         if (!this.hasAttribute('name')) this.setAttribute('name', this.localName);
         
         this.#canvas = this.shadowRoot!.querySelector('canvas')!;
-        this.#canvas.style.touchAction = 'none';
         this.#ctx = this.#canvas.getContext('2d')!;
     }
 
