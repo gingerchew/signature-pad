@@ -1,7 +1,4 @@
 
-/**
- * Signature Pad Custom Element
- */
 export class Point {
     constructor(public x: number, public y:number, public time: number = Date.now()) {}
     distanceTo = (start: Point) => Math.sqrt(Math.pow(this.x - start.x, 2) + Math.pow(this.y - start.y, 2));
