@@ -2,8 +2,7 @@ import type { Point, PointCoords, PointGroup } from './types';
 import { createPoint, distanceTo, velocityFrom } from './point';
 import { Bezier, fromPoints } from './bezier';
 
-const stateToken = 'pointerdown';
-const emptyToken = 'empty';
+const pointerDownToken = 'pointerdown', emptyToken = 'empty';
 export class SignaturePad extends HTMLElement {
     #canvas: HTMLCanvasElement;
     #ctx: CanvasRenderingContext2D;
@@ -95,14 +94,14 @@ export class SignaturePad extends HTMLElement {
                 this.#reset();
                 break;
             case 'pointerdown':
-                this.#internals.states.add(stateToken);
+                this.#internals.states.add(pointerDownToken);
                 this.#strokeStart();
                 break;
             case 'pointermove':
-                if (this.#internals.states.has(stateToken)) this.#strokeUpdate(e as PointerEvent);
+                if (this.#internals.states.has(pointerDownToken)) this.#strokeUpdate(e as PointerEvent);
                 break;
             case 'pointerup':
-                this.#internals.states.delete(stateToken)
+                this.#internals.states.delete(pointerDownToken)
                 this.#strokeEnd(e as PointerEvent);
                 break;
             default:
