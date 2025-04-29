@@ -2,6 +2,8 @@ import type { Point, PointCoords, PointGroup } from './types';
 import { createPoint, distanceTo, velocityFrom } from './point';
 import { Bezier, fromPoints } from './bezier';
 
+const stateToken = 'pointerdown';
+const emptyToken = 'empty';
 export class SignaturePad extends HTMLElement {
     #canvas: HTMLCanvasElement;
     #ctx: CanvasRenderingContext2D;
@@ -41,21 +43,12 @@ export class SignaturePad extends HTMLElement {
         return this.#getNumAttr('canvas-height', 200);
     }
 
-    set #pointerDown(v) {
-        this.toggleAttribute('pointer-down', v);
-    }
-    get #pointerDown() {
-        return this.hasAttribute('pointer-down');
-    }
-
     constructor() {
         super();
         
-        this.attachShadow({ mode: 'open' });
+        this.attachShadow({ mode: 'open' }).innerHTML = `<canvas width="${this.#canvasWidth}" height="${this.#canvasHeight}" style="touch-action: none;"></canvas>`;
         
         if (!this.hasAttribute('name')) this.setAttribute('name', this.localName);
-        
-        this.shadowRoot!.innerHTML = `<canvas width="${this.#canvasWidth}" height="${this.#canvasHeight}" style="touch-action: none;"></canvas>`;
         
         this.#canvas = this.shadowRoot!.querySelector('canvas')!;
         this.#canvas.style.touchAction = 'none';
@@ -67,6 +60,7 @@ export class SignaturePad extends HTMLElement {
         this.#lastVelocity = 0;
         this.#lastWidth = (this.#minWidth + this.#maxWidth) / 2;
         this.#ctx.fillStyle = this.#penColor;
+        this.#internals.states.add(emptyToken);
     }
     
     #createPoint(x:number, y:number, canvas: HTMLCanvasElement) {
@@ -75,8 +69,8 @@ export class SignaturePad extends HTMLElement {
     }
 
     #clear() {
-        const width = this.#getNumAttr('canvaswidth', 300);
-        const height = this.#getNumAttr('canvasheight', 150);
+        const width = this.#canvasWidth;
+        const height = this.#canvasHeight;
         this.#ctx.fillStyle = this.#backgroundColor;
         this.#ctx.clearRect(0, 0, width, height);
         this.#ctx.fillRect(0, 0, width, height);
@@ -84,15 +78,12 @@ export class SignaturePad extends HTMLElement {
         this.#reset();
     }
 
-    #toDataURL(type?:string, encoderOptions?:number) {
-        type ??= 'image/png'
+    #toDataURL(type = 'image/png', encoderOptions?:number) {
         switch(type) {
-            /*
-            case 'image/svg+xml':
-                return this.#toSVG() ?? '';
-            */
-            default:
+            case 'image/png':
                 return this.#canvas.toDataURL(type, encoderOptions);
+            default:
+                import.meta.env.DEV && console.warn(`Generating an image of type ${type} is not supported`);
         }
     }
     
@@ -106,14 +97,14 @@ export class SignaturePad extends HTMLElement {
                 this.#reset();
                 break;
             case 'pointerdown':
-                this.#pointerDown = true;
+                this.#internals.states.add(stateToken);
                 this.#strokeStart();
                 break;
             case 'pointermove':
-                if (this.#pointerDown === true) this.#strokeUpdate(e as PointerEvent);
+                if (this.#internals.states.has(stateToken)) this.#strokeUpdate(e as PointerEvent);
                 break;
             case 'pointerup':
-                this.#pointerDown = false;
+                this.#internals.states.delete(stateToken)
                 this.#strokeEnd(e as PointerEvent);
                 break;
             default:
@@ -153,7 +144,8 @@ export class SignaturePad extends HTMLElement {
     
     #strokeEnd(e: PointerEvent) {
         this.#strokeUpdate(e);
-        this.#internals.setFormValue(this.#toDataURL('image/png'));
+        this.#internals.setFormValue(this.#toDataURL('image/png')!);
+        this.#internals.states.delete(emptyToken);
     }
     
     #strokeWidth = (velocity: number) => Math.max(this.#maxWidth / (velocity + 1), this.#minWidth);
