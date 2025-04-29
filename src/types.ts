@@ -1,20 +1,20 @@
 
-export type Point = {
+export interface Point {
   x: number;
   y: number;
   time: number;
 }
 
-export type PointCoords = {
+export interface PointCoords {
     x: number;
     y: number;
 }
-export type PointGroup = {
+export interface PointGroup {
     color: string;
     points: Point[]
 }
 
-export type Width = {
+export interface Width {
     start: number;
     end: number;
 }
