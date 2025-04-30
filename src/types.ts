@@ -9,9 +9,20 @@ interface PointCoords {
   x: number;
   y: number;
 }
+
 interface PointGroup {
   color: string;
   points: Point[]
+}
+
+interface Bezier {
+  startPoint: Point;
+  control2: Point;
+  control1: Point;
+  endPoint: Point;
+  startWidth: number;
+  endWidth: number;
+  length: number;
 }
 
 interface Width {
@@ -23,6 +34,7 @@ export type {
   Point,
   PointCoords,
   PointGroup,
+  Bezier,
   Width
 }
 
