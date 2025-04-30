@@ -1,4 +1,4 @@
-import type { Bezier, Point, PointCoords, PointGroup, Width } from './types';
+import type { Bezier, Point, PointGroup, Width } from './types';
 import { createPoint, distanceTo, velocityFrom } from './point';
 import { createBezier } from './bezier';
 
@@ -143,8 +143,8 @@ export class SignaturePad extends HTMLElement {
         this.#reset()
     }
     
-    #strokeUpdate({ clientX: x, clientY: y }: PointerEvent) {
-        const point = this.#createPoint(x, y, this.#canvas);
+    #strokeUpdate(e: PointerEvent) {
+        const point = this.#createPoint(e.clientX, e.clientY, this.#canvas);
         const lastPointGroup = this.#data.at(-1)!;
         
         const lastPoints = lastPointGroup.points;
@@ -156,9 +156,9 @@ export class SignaturePad extends HTMLElement {
             const curve = this.#addPoint(point);
             
             if (!lastPoint) {
-                this.#drawDot({ color, point });
+                this.#drawDot(color, point);
             } else if (curve) {
-                this.#drawCurve({ color, curve });
+                this.#drawCurve(color, curve);
             }
             lastPoints.push(point)
         }
@@ -172,9 +172,19 @@ export class SignaturePad extends HTMLElement {
     
     #strokeWidth = (velocity: number) => Math.max(this.#maxWidth / (velocity + 1), this.#minWidth);
     
-    #drawCurve({ color, curve }: { color: string, curve: Bezier}) {
-        const widthDelta = curve.endWidth - curve.startWidth,
-            drawSteps = Math.floor(curve.length) * 2;
+    #drawCurve(
+        color: string, 
+        {
+            control1,
+            control2,
+            startPoint,
+            endPoint,
+            startWidth,
+            endWidth,
+            length
+        }: Bezier) {
+        const widthDelta = endWidth - startWidth,
+            drawSteps = Math.floor(length) * 2;
             
         this.#ctx.beginPath();
         this.#ctx.fillStyle = color;
@@ -185,10 +195,10 @@ export class SignaturePad extends HTMLElement {
                 u = 1 - t,
                 uu = u * u,
                 uuu = uu * u,
-                x = uuu * curve.startPoint.x + 3 * uu * t * curve.control1.x + 3 * u * tt * curve.control2.x + ttt * curve.endPoint.x,
-                y = uuu * curve.startPoint.y + 3 * uu * t * curve.control1.y + 3 * u * tt * curve.control2.y + ttt * curve.endPoint.y;
+                x = uuu * startPoint.x + 3 * uu * t * control1.x + 3 * u * tt * control2.x + ttt * endPoint.x,
+                y = uuu * startPoint.y + 3 * uu * t * control1.y + 3 * u * tt * control2.y + ttt * endPoint.y;
             /*
-            The above long line of code for x and y was what you see below. Commenting out for preservation
+            The above long lines of code for x and y was what you see below. Commenting out for preservation
             x += 3 * uu * t * curve.control1.x;
             x += 3 * u * tt * curve.control2.x;
             x += ttt * curve.endPoint.x;
@@ -197,21 +207,21 @@ export class SignaturePad extends HTMLElement {
             y += ttt * curve.endPoint.y;
             */
             
-            this.#drawCurveSegment({x, y}, Math.min(curve.startWidth + ttt * widthDelta, this.#maxWidth));
+            this.#drawCurveSegment(x, y, Math.min(startWidth + ttt * widthDelta, this.#maxWidth));
         }
         this.#ctx.closePath();
         this.#ctx.fill();
     }
     
-    #drawDot({ color, point }: { color: string, point: Point }) {
+    #drawDot(color: string, point: Point) {
         this.#ctx.beginPath();
-        this.#drawCurveSegment(point, this.#dotSize);
+        this.#drawCurveSegment(point.x, point.y, this.#dotSize);
         this.#ctx.closePath();
         this.#ctx.fillStyle = color;
         this.#ctx.fill();
     }
     
-    #drawCurveSegment({ x, y }: PointCoords, width: number) {
+    #drawCurveSegment(x:number, y:number, width: number) {
         this.#ctx.moveTo(x, y);
         this.#ctx.arc(x, y, width, 0, 2 * Math.PI, false);
     }
