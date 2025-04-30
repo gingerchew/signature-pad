@@ -1,8 +1,38 @@
-import type { Point, PointCoords, PointGroup } from './types';
+import type { Bezier, Point, PointCoords, PointGroup, Width } from './types';
 import { createPoint, distanceTo, velocityFrom } from './point';
-import { Bezier, fromPoints } from './bezier';
+import { createBezier } from './bezier';
 
-const pointerDownToken = 'pointerdown', emptyToken = 'empty';
+const pointerDownToken = 'pointerdown', emptyToken = 'empty',
+    calculateControlPoints = (s1:Point, s2:Point, s3:Point) =>{
+        const dx1 = s1.x - s2.x,
+            dy1 = s1.y - s2.y,
+            dx2 = s2.x - s3.x,
+            dy2 = s2.y - s3.y,
+            m1 = { x: (s1.x + s2.x) / 2.0, y: (s1.y + s2.y) / 2.0 },
+            m2 = { x: (s2.x + s3.x) / 2.0, y: (s2.y + s3.y) / 2.0 },
+            l1 = Math.sqrt(dx1 * dx1 + dy1 * dy1),
+            l2 = Math.sqrt(dx2 * dx2 + dy2 * dy2),
+            dxm = m1.x - m2.x,
+            dym = m1.y - m2.y,
+            k = l2 / (l1 + l2),
+            cm = { x: m2.x + dxm * k, y: m2.y + dym * k },
+            tx = s2.x - cm.x,
+            ty = s2.y - cm.y;
+        return {
+            c1: createPoint(m1.x + tx, m1.y + ty),
+            c2: createPoint(m2.x + tx, m2.y + ty)
+        }
+    },
+    bezierFromPoints = (points: Point[], widths: Width) => createBezier(
+        points[1], 
+        calculateControlPoints(points[0], points[1], points[2]).c2, 
+        calculateControlPoints(points[1], points[2], points[3]).c1,
+        points[2],
+        widths.start,
+        widths.end
+    ),
+    getNumAttr = (instance: SignaturePad, name: string, fallback: number) => instance.hasAttribute(name) ? parseFloat(instance.getAttribute(name)!) : fallback;
+
 export class SignaturePad extends HTMLElement {
     #canvas: HTMLCanvasElement;
     #ctx: CanvasRenderingContext2D;
@@ -19,27 +49,23 @@ export class SignaturePad extends HTMLElement {
     #lastVelocity = 0;
     #lastWidth = (this.#minWidth + this.#maxWidth) / 2;
 
-    #getNumAttr(name:string, fallback:number) {
-        return this.hasAttribute(name) ? parseInt(this.getAttribute(name)!, 10) : fallback;
-    }
-
     get #minWidth() {
-        return this.#getNumAttr('min-width', 0.5);
+        return getNumAttr(this, 'min-width', 0.5);
     }
     get #maxWidth() {
-        return this.#getNumAttr('max-width', 2.5);
+        return getNumAttr(this, 'max-width', 2.5);
     }
     get #minDistance() {
-        return this.#getNumAttr('min-distance', 5);
+        return getNumAttr(this, 'min-distance', 5);
     }
     get #dotSize() {
-        return this.#getNumAttr('dot-size', (this.#minWidth + this.#maxWidth) / 2);
+        return getNumAttr(this, 'dot-size', (this.#minWidth + this.#maxWidth) / 2);
     }
     get #canvasWidth() {
-        return this.#getNumAttr('canvas-width', 500);
+        return getNumAttr(this, 'canvas-width', 500);
     }
     get #canvasHeight() {
-        return this.#getNumAttr('canvas-height', 200);
+        return getNumAttr(this, 'canvas-height', 200);
     }
 
     constructor() {
@@ -85,8 +111,7 @@ export class SignaturePad extends HTMLElement {
     }
     
     handleEvent(e: CommandEvent|PointerEvent) {
-        const type = 'command' in e ? e.command : e.type;
-        switch(type) {
+        switch('command' in e ? e.command : e.type) {
             case '--clear':
                 this.#clear();
                 break;
@@ -154,17 +179,17 @@ export class SignaturePad extends HTMLElement {
         this.#ctx.beginPath();
         this.#ctx.fillStyle = color;
         for (let i = 0;i < drawSteps;i+=1) {
-            const t = i / drawSteps;
-            const tt = t * t;
-            const ttt = tt * t;
-            const u = 1 - t;
-            const uu = u * u;
-            const uuu = uu * u;
-            let x = uuu * curve.startPoint.x;
+            const t = i / drawSteps,
+                tt = t * t,
+                ttt = tt * t,
+                u = 1 - t,
+                uu = u * u,
+                uuu = uu * u;
+            let x = uuu * curve.startPoint.x,
+                y = uuu * curve.startPoint.y;
             x += 3 * uu * t * curve.control1.x;
             x += 3 * u * tt * curve.control2.x;
             x += ttt * curve.endPoint.x;
-            let y = uuu * curve.startPoint.y;
             y += 3 * uu * t * curve.control1.y;
             y += 3 * u * tt * curve.control2.y;
             y += ttt * curve.endPoint.y;
@@ -191,16 +216,15 @@ export class SignaturePad extends HTMLElement {
     #addPoint(point:Point) {
         this.#lastPoints.push(point);
         
-        if (this.#lastPoints.length > 2) {
-            if (this.#lastPoints.length === 3) {
-                this.#lastPoints.unshift(this.#lastPoints[0]);
-            }
-            const widths = this.#calculateCurveWidths(this.#lastPoints[1], this.#lastPoints[2]);
-            
-            this.#lastPoints.shift();
-            return fromPoints(this.#lastPoints, widths);
+        if (this.#lastPoints.length < 3) return;
+        
+        if (this.#lastPoints.length === 3) {
+            this.#lastPoints.unshift(this.#lastPoints[0]);
         }
-        return null;
+        const widths = this.#calculateCurveWidths(this.#lastPoints[1], this.#lastPoints[2]);
+        
+        this.#lastPoints.shift();
+        return bezierFromPoints(this.#lastPoints, widths);
     }
     
     #calculateCurveWidths(start:Point, end: Point) {
