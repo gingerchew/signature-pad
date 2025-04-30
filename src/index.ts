@@ -1,3 +1,4 @@
 import { SignaturePad } from "./element";
 
-export const define = () => customElements.define('signature-pad', SignaturePad);
+const define = () => customElements.define('signature-pad', SignaturePad);
+export { define }
