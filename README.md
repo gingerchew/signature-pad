@@ -1,5 +1,7 @@
 # SignaturePad Custom Element
 
+>[note:] Still under some development
+
 ## Attributes
 
 - `name`: Equivalent to `name` on `<input>` elements, defaults to `signature-pad`
