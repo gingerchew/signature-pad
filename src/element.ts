@@ -23,13 +23,13 @@ const pointerDownToken = 'pointerdown', emptyToken = 'empty',
             c2: createPoint(m2.x + tx, m2.y + ty)
         }
     },
-    bezierFromPoints = (points: Point[], widths: Width) => createBezier(
-        points[1], 
-        calculateControlPoints(points[0], points[1], points[2]).c2, 
-        calculateControlPoints(points[1], points[2], points[3]).c1,
-        points[2],
-        widths.start,
-        widths.end
+    bezierFromPoints = ([zero,one,two,three]: Point[], width: Width) => createBezier(
+        one, 
+        calculateControlPoints(zero, one, two).c2, 
+        calculateControlPoints(one, two, three).c1,
+        two,
+        width.start,
+        width.end
     ),
     getNumAttr = (instance: SignaturePad, name: string, fallback: number) => instance.hasAttribute(name) ? parseFloat(instance.getAttribute(name)!) : fallback;
 
