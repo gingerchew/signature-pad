@@ -184,15 +184,18 @@ export class SignaturePad extends HTMLElement {
                 ttt = tt * t,
                 u = 1 - t,
                 uu = u * u,
-                uuu = uu * u;
-            let x = uuu * curve.startPoint.x,
-                y = uuu * curve.startPoint.y;
+                uuu = uu * u,
+                x = uuu * curve.startPoint.x + 3 * uu * t * curve.control1.x + 3 * u * tt * curve.control2.x + ttt * curve.endPoint.x,
+                y = uuu * curve.startPoint.y + 3 * uu * t * curve.control1.y + 3 * u * tt * curve.control2.y + ttt * curve.endPoint.y;
+            /*
+            The above long line of code for x and y was what you see below. Commenting out for preservation
             x += 3 * uu * t * curve.control1.x;
             x += 3 * u * tt * curve.control2.x;
             x += ttt * curve.endPoint.x;
             y += 3 * uu * t * curve.control1.y;
             y += 3 * u * tt * curve.control2.y;
             y += ttt * curve.endPoint.y;
+            */
             
             this.#drawCurveSegment({x, y}, Math.min(curve.startWidth + ttt * widthDelta, this.#maxWidth));
         }
