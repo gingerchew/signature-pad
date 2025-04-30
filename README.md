@@ -12,7 +12,7 @@
 
 ## States
 
-- `pointerdown`: A state for changing styles when the user is drawing in the canvas
+- `drawing`: A state for changing styles when the user is drawing in the canvas
 - `empty`: Whether or not the canvas has been drawn in
 
 ### How to use states

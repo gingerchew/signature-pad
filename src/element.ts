@@ -2,7 +2,7 @@ import type { Bezier, Point, PointGroup, Width } from './types';
 import { createPoint, distanceTo, velocityFrom } from './point';
 import { createBezier } from './bezier';
 
-const pointerDownToken = 'pointerdown', emptyToken = 'empty',
+const pointerDownToken = 'drawing', emptyToken = 'empty',
     calculateControlPoints = (s1:Point, s2:Point, s3:Point) =>{
         const dx1 = s1.x - s2.x,
             dy1 = s1.y - s2.y,
